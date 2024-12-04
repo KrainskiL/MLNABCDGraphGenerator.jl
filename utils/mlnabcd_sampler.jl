@@ -82,8 +82,8 @@ open("edges.dat", "w") do io
 end
 open("communities.dat", "w") do io
     for i in eachindex(coms)
-        for (j, c) in enumerate(coms[i])
-            println(io, j, "\t", c, "\t", i)
+        for c in coms[i]
+            println(io, c, "\t", i)
         end
     end
 end

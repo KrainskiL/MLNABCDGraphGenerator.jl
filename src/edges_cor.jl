@@ -228,5 +228,5 @@ function adjust_edges_correlation!(edges, coms, active_nodes, correlation::Float
         edges_common_agents = common_agents_edges(edges, active_nodes)
         edges_cor = calculate_edges_cor(edges_common_agents)
     end
-    print("Average adjust hit rate:", mean(avg_adjust_ratio))
+    verbose && print("Average adjust hit rate:", mean(avg_adjust_ratio))
 end

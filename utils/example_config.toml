@@ -1,6 +1,6 @@
 seed = "42"                         # RNG seed, use "" for no seeding
 n = "1000"                          # number of agents
-R = "0.2"                           # edges correlation matrix
+R = "0.2"                           # desired edges correlation
 layer_params = "layer_params.csv"   # file with parameters for each layer
 d_max_iter = "1000"                 # maximum number of iterations for sampling degrees
 c_max_iter = "1000"                 # maximum number of iterations for sampling cluster sizes
