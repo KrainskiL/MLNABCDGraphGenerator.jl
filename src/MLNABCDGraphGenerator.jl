@@ -5,6 +5,7 @@ using StatsBase
 using ArgParse
 using ABCDGraphGenerator
 using DelimitedFiles
+using Dates
 
 include("degree_cor.jl")
 include("community_cor.jl")

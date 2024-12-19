@@ -14,7 +14,7 @@ function find_ranking(vs, rho, verbose=false, limit=20)
     elseif rho == 0
         for _ in 1:limit
             tmp_ranking = shuffle(vs)
-            tmp_sampled_rho = corspearman(vs, tmp_ranking)
+            tmp_sampled_rho = corkendall(vs, tmp_ranking)
             if abs(tmp_sampled_rho - rho) < best_diff
                 best_ranking = tmp_ranking
                 best_diff = abs(tmp_sampled_rho - rho)
@@ -22,12 +22,12 @@ function find_ranking(vs, rho, verbose=false, limit=20)
         end
     else
         rho_pos = abs(rho)
-        sigma_rho = readdlm("../src/sigma_rho.csv", ',')
+        sigma_rho = readdlm("../src/sigma_tau.csv", ',')
         idx = argmin(abs.(sigma_rho[:, 2] .- rho_pos))
         sigma = sigma_rho[idx, 1]
         for _ in 1:limit
             tmp_ranking = sample_ranking(vs, sigma)
-            tmp_sampled_rho = corspearman(vs, tmp_ranking)
+            tmp_sampled_rho = corkendall(vs, tmp_ranking)
             if abs(tmp_sampled_rho - rho_pos) < best_diff
                 best_ranking = tmp_ranking
                 best_diff = abs(tmp_sampled_rho - rho_pos)
@@ -37,9 +37,9 @@ function find_ranking(vs, rho, verbose=false, limit=20)
     if rho < 0
         best_ranking = reverse(best_ranking)
     end
-    best_r = corspearman(vs, best_ranking)
+    best_r = corkendall(vs, best_ranking)
     diff = abs(best_r - rho)
-    verbose && println("Input ρ=$(rho) | Generated ρ=$(best_r) | Difference=$(diff)")
+    verbose && println("Input τ=$(rho) | Generated ρ=$(best_r) | Difference=$(diff)")
     return (rho=best_r, ranking=best_ranking, diff=diff)
 end
 
@@ -51,7 +51,7 @@ function degrees_correlation(
     verbose::Bool=false)
     @assert length(degs) == length(rhos) "Length of correlation vector must be the same as generated degree sequences"
     @assert length.(degs) == length.(active_nodes) "Size of degree sequence must match number of active nodes in each layer"
-    vs = 1:n
+    vs = collect(1:n)
     orderings = [find_ranking(vs, rho, verbose).ranking for rho in rhos]
     degs_correlated = Vector{Vector{Int}}()
     for i in eachindex(degs)

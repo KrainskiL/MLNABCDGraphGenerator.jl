@@ -2,7 +2,7 @@
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "b6ec722fa57995ee3b1f10cddb369b8c5cccac62"
+project_hash = "069be73cca63704345280c2284d43a0b990fd783"
 
 [[deps.ABCDGraphGenerator]]
 deps = ["ArgParse", "Pkg", "Random", "StatsBase"]

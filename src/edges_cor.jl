@@ -89,9 +89,9 @@ function calculate_edges_cor(edges_common_agents, rounded=false)
     return current_rs
 end
 
-function pick_cor_to_improve(cor_vec, desired_cor::Float64, method::String="weighted")
+function pick_cor_to_improve(cor_vec, desired_cor::Matrix{Float64}, method::String="weighted")
     @assert method in ["weighted", "uniform", "e-greedy"] "Method must bed weighted, uniform or e-greedy, got $(method)"
-    cor_diff = [(e[1], e[2] - desired_cor) for e in cor_vec]
+    cor_diff = [(e[1], e[2] - desired_cor[e[1][1],e[1][2]]) for e in cor_vec]
     cor_diff_values = abs.(getindex.(cor_diff, 2))
     if method == "uniform"
         pick = rand(cor_diff)
@@ -114,6 +114,11 @@ function pick_cor_to_improve(cor_vec, desired_cor::Float64, method::String="weig
         direction = "skip"
     end
     return (layers, direction)
+end
+
+function write_cor_diff_to_file(io, cor_vec, desired_cor::Matrix{Float64})
+    cor_diff = [(join(e[1],'-'), e[2] - desired_cor[e[1][1],e[1][2]]) for e in cor_vec]
+    println(io, join(getindex.(sort(cor_diff,by=x->x[1]),2),','))
 end
 
 function increase_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common, neighbours, coms_agents, perc_rewire::Float64=0.4, verbose::Bool=false)
@@ -204,14 +209,20 @@ function decrease_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common
     return adjust_ratio
 end
 
-function adjust_edges_correlation!(edges, coms, active_nodes, correlation::Float64,
-    batches::Int=100, perc_rewire::Float64=0.1, verbose::Bool=false)
+function adjust_edges_correlation!(edges, coms, active_nodes, cor_matrix::Matrix{Float64},
+    batches::Int=100, perc_rewire::Float64=0.1, verbose::Bool=false, save_cor_change_to_file::Bool=false)
 
     edges_common_agents = common_agents_edges(edges, active_nodes)
     edges_cor = calculate_edges_cor(edges_common_agents)
     avg_adjust_ratio = []
-    for _ in 1:batches
-        layers, direction = pick_cor_to_improve(edges_cor, correlation, "weighted")
+    if save_cor_change_to_file
+        now_str = replace(string(now()),r"-|\.|:|T"=>"_")
+        io =  open("edges_correlation_$(now_str).log","a")
+        println(io, join(sort(join.(getindex.(edges_cor,1),'-')),','))
+        write_cor_diff_to_file(io, edges_cor, cor_matrix)
+    end
+    for b in 1:batches
+        layers, direction = pick_cor_to_improve(edges_cor, cor_matrix, "weighted")
         verbose && println("Adjusting correlation for layers:", layers, " Direction:", direction)
         i, j = layers
         common_agents = intersect(Set(active_nodes[i]), Set(active_nodes[j]))
@@ -227,6 +238,8 @@ function adjust_edges_correlation!(edges, coms, active_nodes, correlation::Float
         push!(avg_adjust_ratio, adj_ratio)
         edges_common_agents = common_agents_edges(edges, active_nodes)
         edges_cor = calculate_edges_cor(edges_common_agents)
+        save_cor_change_to_file && write_cor_diff_to_file(io, edges_cor, cor_matrix)
     end
     verbose && print("Average adjust hit rate:", mean(avg_adjust_ratio))
+    save_cor_change_to_file && close(io)
 end

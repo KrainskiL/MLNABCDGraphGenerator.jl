@@ -16,16 +16,28 @@ isempty(conf["seed"]) || Random.seed!(parse(Int, conf["seed"]))
 n = parse(Int, conf["n"])
 t = parse(Int, conf["t"])
 ϵ = parse(Float64, conf["e"])
-edges_r = parse(Float64, conf["R"])
 islocal = false
 isCL = false
 μ = nothing
 
-lparams = readdlm(conf["layer_params"], ',', skipstart=1)
+lparams_file = conf["layer_params"]
+lparams = readdlm(lparams_file, ',', skipstart=1)
 l = size(lparams)[1]
 qs = lparams[:, 1]
-rhos = lparams[:, 2]
+taus = lparams[:, 2]
 rs = lparams[:, 3]
+
+skip_edges_correlation = false
+if isempty(conf["edges_cor"]) || conf["edges_cor"] == ""
+    skip_edges_correlation = true
+elseif occursin(".csv", conf["edges_cor"])
+    edges_cor_matrix = convert.(Float64,readdlm(conf["edges_cor"],',', skipstart=1)[:,2:end])
+    x, y = size(edges_cor_matrix)
+    @assert (x == l) && (y == l) "Edges correlation matrix size don't match number of layers from $(lparams_file)"
+else
+    edges_cor = parse(Float64, conf["edges_cor"])
+    edges_cor_matrix = fill(edges_cor,l,l)
+end
 
 #Active nodes
 ns = round.(Int, n .* qs)
@@ -40,7 +52,7 @@ for i in 1:size(lparams)[1]
     degs_layer = ABCDGraphGenerator.sample_degrees(τ, Int(d_min), Int(d_max), ni, d_max_iter)
     push!(degs, degs_layer)
 end
-degs = MLNABCDGraphGenerator.degrees_correlation(n, degs, rhos, active_nodes, false)
+degs = MLNABCDGraphGenerator.degrees_correlation(n, degs, taus, active_nodes, false)
 # for i in eachindex(degs_correlated)
 #     open(io -> foreach(d -> println(io, d), degs_correlated[i]), "deg_$(i).dat", "w")
 # end
@@ -69,10 +81,9 @@ for i in 1:l
 end
 edges = MLNABCDGraphGenerator.map_edges_to_agents(edges, active_nodes)
 coms = MLNABCDGraphGenerator.map_communities_to_agents(n, coms, active_nodes)
-MLNABCDGraphGenerator.adjust_edges_correlation!(edges, coms, active_nodes, edges_r, t, ϵ, false)
-edges_common_agents = MLNABCDGraphGenerator.common_agents_edges(edges, active_nodes)
-edges_cor = MLNABCDGraphGenerator.calculate_edges_cor(edges_common_agents, true)
-
+if !skip_edges_correlation
+    MLNABCDGraphGenerator.adjust_edges_correlation!(edges, coms, active_nodes, edges_cor_matrix, t, ϵ, false, true)
+end
 open("edges.dat", "w") do io
     for i in eachindex(edges)
         for (a, b) in sort!(collect(edges[i]))
