@@ -22,7 +22,7 @@ function find_ranking(vs, rho, verbose=false, limit=20)
         end
     else
         rho_pos = abs(rho)
-        sigma_rho = readdlm("../src/sigma_tau.csv", ',')
+        sigma_rho = readdlm(joinpath(@__DIR__,"sigma_tau.csv"), ',')
         idx = argmin(abs.(sigma_rho[:, 2] .- rho_pos))
         sigma = sigma_rho[idx, 1]
         for _ in 1:limit

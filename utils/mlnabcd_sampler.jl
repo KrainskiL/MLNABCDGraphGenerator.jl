@@ -9,7 +9,6 @@ using StatsBase
 @info "For the syntax of config_filename see example_config.toml file"
 
 filename = ARGS[1]
-filename = "example_config.toml"
 conf = Pkg.TOML.parsefile(filename)
 isempty(conf["seed"]) || Random.seed!(parse(Int, conf["seed"]))
 

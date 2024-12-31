@@ -91,7 +91,12 @@ end
 
 function pick_cor_to_improve(cor_vec, desired_cor::Matrix{Float64}, method::String="weighted")
     @assert method in ["weighted", "uniform", "e-greedy"] "Method must bed weighted, uniform or e-greedy, got $(method)"
-    cor_diff = [(e[1], e[2] - desired_cor[e[1][1],e[1][2]]) for e in cor_vec]
+    cor_diff = []
+    for (layers, current_cor) in cor_vec
+        diff = current_cor - desired_cor[layers...]
+        diff = isnan(diff) ? 0.0 : diff
+        push!(cor_diff, (layers, diff))
+    end
     cor_diff_values = abs.(getindex.(cor_diff, 2))
     if method == "uniform"
         pick = rand(cor_diff)
@@ -117,8 +122,8 @@ function pick_cor_to_improve(cor_vec, desired_cor::Matrix{Float64}, method::Stri
 end
 
 function write_cor_diff_to_file(io, cor_vec, desired_cor::Matrix{Float64})
-    cor_diff = [(join(e[1],'-'), e[2] - desired_cor[e[1][1],e[1][2]]) for e in cor_vec]
-    println(io, join(getindex.(sort(cor_diff,by=x->x[1]),2),','))
+    cor_diff = [(join(e[1], '-'), e[2] - desired_cor[e[1][1], e[1][2]]) for e in cor_vec]
+    println(io, join(getindex.(sort(cor_diff, by=x -> x[1]), 2), ','))
 end
 
 function increase_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common, neighbours, coms_agents, perc_rewire::Float64=0.4, verbose::Bool=false)
@@ -216,9 +221,9 @@ function adjust_edges_correlation!(edges, coms, active_nodes, cor_matrix::Matrix
     edges_cor = calculate_edges_cor(edges_common_agents)
     avg_adjust_ratio = []
     if save_cor_change_to_file
-        now_str = replace(string(now()),r"-|\.|:|T"=>"_")
-        io =  open("edges_correlation_$(now_str).log","a")
-        println(io, join(sort(join.(getindex.(edges_cor,1),'-')),','))
+        now_str = replace(string(now()), r"-|\.|:|T" => "_")
+        io = open("edges_correlation_$(now_str).log", "a")
+        println(io, join(sort(join.(getindex.(edges_cor, 1), '-')), ','))
         write_cor_diff_to_file(io, edges_cor, cor_matrix)
     end
     for b in 1:batches
