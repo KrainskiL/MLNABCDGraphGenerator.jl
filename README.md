@@ -3,7 +3,8 @@
 Run the following commands in your Julia REPL:
 ```julia
 using Pkg
-Pkg.add("https://github.com/KrainskiL/MLNABCDGraphGenerator.jl")
+Pkg.add(url="https://github.com/bkamins/ABCDGraphGenerator.jl")
+Pkg.add(url="https://github.com/KrainskiL/MLNABCDGraphGenerator.jl")
 
 ```
 
