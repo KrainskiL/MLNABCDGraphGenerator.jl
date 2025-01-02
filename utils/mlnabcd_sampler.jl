@@ -52,9 +52,6 @@ for i in 1:size(lparams)[1]
     push!(degs, degs_layer)
 end
 degs = MLNABCDGraphGenerator.degrees_correlation(n, degs, taus, active_nodes, false)
-# for i in eachindex(degs_correlated)
-#     open(io -> foreach(d -> println(io, d), degs_correlated[i]), "deg_$(i).dat", "w")
-# end
 
 #Sizes of communities
 c_max_iter = parse(Int, conf["c_max_iter"])
@@ -66,9 +63,6 @@ for i in 1:size(lparams)[1]
     push!(coms_sizes, coms_layer)
 end
 coms = MLNABCDGraphGenerator.communities_correlation(n, coms_sizes, rs, active_nodes)
-# for i in eachindex(coms)
-#     open(io -> foreach(d -> println(io, d), coms[i]), "comm_$(i).dat", "w")
-# end
 
 edges = Vector{Set{Tuple{Int64,Int64}}}()
 clusters = []
@@ -81,7 +75,7 @@ end
 edges = MLNABCDGraphGenerator.map_edges_to_agents(edges, active_nodes)
 coms = MLNABCDGraphGenerator.map_communities_to_agents(n, coms, active_nodes)
 if !skip_edges_correlation
-    MLNABCDGraphGenerator.adjust_edges_correlation!(edges, coms, active_nodes, edges_cor_matrix, t, ϵ, false, true)
+    MLNABCDGraphGenerator.adjust_edges_correlation!(edges, coms, active_nodes, edges_cor_matrix, t, ϵ, false, false)
 end
 open("edges.dat", "w") do io
     for i in eachindex(edges)
