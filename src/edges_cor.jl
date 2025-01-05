@@ -214,9 +214,11 @@ function decrease_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common
     return adjust_ratio
 end
 
-function adjust_edges_correlation!(edges, coms, active_nodes, cor_matrix::Matrix{Float64},
-    batches::Int=100, perc_rewire::Float64=0.1, verbose::Bool=false, save_cor_change_to_file::Bool=false)
+function adjust_edges_correlation!(cfg::MLNConfig, edges, coms::Vector{Vector{Int}},
+    active_nodes::Vector{Vector{Int}},
+    verbose::Bool=false, save_cor_change_to_file::Bool=false)
 
+    cfg.skip_edges_correlation && return nothing
     edges_common_agents = common_agents_edges(edges, active_nodes)
     edges_cor = calculate_edges_cor(edges_common_agents)
     avg_adjust_ratio = []
@@ -224,10 +226,10 @@ function adjust_edges_correlation!(edges, coms, active_nodes, cor_matrix::Matrix
         now_str = replace(string(now()), r"-|\.|:|T" => "_")
         io = open("edges_correlation_$(now_str).log", "a")
         println(io, join(sort(join.(getindex.(edges_cor, 1), '-')), ','))
-        write_cor_diff_to_file(io, edges_cor, cor_matrix)
+        write_cor_diff_to_file(io, edges_cor, cfg.edges_cor_matrix)
     end
-    for b in 1:batches
-        layers, direction = pick_cor_to_improve(edges_cor, cor_matrix, "weighted")
+    for b in 1:cfg.t
+        layers, direction = pick_cor_to_improve(edges_cor, cfg.edges_cor_matrix, "weighted")
         verbose && println("Adjusting correlation for layers:", layers, " Direction:", direction)
         i, j = layers
         common_agents = intersect(Set(active_nodes[i]), Set(active_nodes[j]))
@@ -236,15 +238,18 @@ function adjust_edges_correlation!(edges, coms, active_nodes, cor_matrix::Matrix
         neighbours = (map_neighbours(edges1, coms[i]), map_neighbours(edges2, coms[j]))
         edges_in_communities = (map_communities(edges1, coms[i]), map_communities(edges2, coms[j]))
         if direction == "increase"
-            adj_ratio = increase_edges_correlation!(layers, edges, (edges1, edges2), neighbours, coms, perc_rewire, verbose)
+            adj_ratio = increase_edges_correlation!(layers, edges, (edges1, edges2), neighbours, coms, cfg.eps, verbose)
         elseif direction == "decrease"
-            adj_ratio = decrease_edges_correlation!(layers, edges, (edges1, edges2), edges_in_communities, coms, perc_rewire, verbose)
+            adj_ratio = decrease_edges_correlation!(layers, edges, (edges1, edges2), edges_in_communities, coms, cfg.eps, verbose)
+        else
+            continue
         end
         push!(avg_adjust_ratio, adj_ratio)
         edges_common_agents = common_agents_edges(edges, active_nodes)
         edges_cor = calculate_edges_cor(edges_common_agents)
-        save_cor_change_to_file && write_cor_diff_to_file(io, edges_cor, cor_matrix)
+        save_cor_change_to_file && write_cor_diff_to_file(io, edges_cor, cfg.edges_cor_matrix)
     end
     verbose && print("Average adjust hit rate:", mean(avg_adjust_ratio))
     save_cor_change_to_file && close(io)
+    return nothing
 end

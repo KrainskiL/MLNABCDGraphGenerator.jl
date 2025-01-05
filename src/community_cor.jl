@@ -1,12 +1,12 @@
 
-function sample_points(n, d)
+function sample_points(n::Int, d::Int)
     points = randn(n, d)
     points ./= sqrt.(sum(x -> x^2, points, dims=2))
     points .*= rand(n) .^ (1 / d)
     return points
 end
 
-function assign_points(x, c)
+function assign_points(x::Matrix{Float64}, c::Vector{Int})
     @assert ndims(x) == 2
     @assert sum(c) == size(x, 1)
     c = shuffle(c)
@@ -32,7 +32,7 @@ function assign_points(x, c)
     return res
 end
 
-function shuffle_communities(r, a)
+function shuffle_communities(r::Float64, a::Vector{Vector{Int}})
     shuffle_nodes = []
     for i in 1:length(a)
         for j in 1:length(a[i])
@@ -46,7 +46,6 @@ function shuffle_communities(r, a)
     if length(shuffle_nodes) > 1
         shuffle!(shuffle_nodes)
         for i in 1:length(shuffle_nodes)-1
-            # println("processing index $(i) and $(i+1)")
             com1, pos1 = shuffle_nodes[i]
             com2, pos2 = shuffle_nodes[i+1]
             tmp_node = shuffled_a[com1][pos1]
@@ -57,7 +56,11 @@ function shuffle_communities(r, a)
     return shuffled_a
 end
 
-function communities_correlation(n, coms, rs, active_nodes)
+function communities_correlation(n::Int,
+    coms::Vector{Vector{Int}},
+    rs::Vector{Float64},
+    active_nodes::Vector{Vector{Int}})
+
     x = sample_points(n, 2)
     coms_correlated = Vector{Vector{Int}}()
     for i in eachindex(coms)
@@ -73,4 +76,9 @@ function communities_correlation(n, coms, rs, active_nodes)
         push!(coms_correlated, flattened)
     end
     return coms_correlated
+end
+
+function generate_communities(cfg::MLNConfig, active_nodes::Vector{Vector{Int}})
+    coms_sizes = ABCDGraphGenerator.sample_communities.(cfg.betas, cfg.c_mins, cfg.c_maxs, cfg.ns, Ref(cfg.c_max_iter))
+    return coms_sizes, communities_correlation(cfg.n, coms_sizes, cfg.rs, active_nodes)
 end

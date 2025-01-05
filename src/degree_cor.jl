@@ -22,7 +22,7 @@ function find_ranking(vs, rho, verbose=false, limit=20)
         end
     else
         rho_pos = abs(rho)
-        sigma_rho = readdlm(joinpath(@__DIR__,"sigma_tau.csv"), ',')
+        sigma_rho = readdlm(joinpath(@__DIR__, "sigma_tau.csv"), ',')
         idx = argmin(abs.(sigma_rho[:, 2] .- rho_pos))
         sigma = sigma_rho[idx, 1]
         for _ in 1:limit
@@ -46,13 +46,13 @@ end
 function degrees_correlation(
     n::Int,
     degs::Vector{Vector{Int}},
-    rhos::Vector{Float64},
+    taus::Vector{Float64},
     active_nodes::Vector{Vector{Int}},
     verbose::Bool=false)
-    @assert length(degs) == length(rhos) "Length of correlation vector must be the same as generated degree sequences"
+    @assert length(degs) == length(taus) "Length of correlation vector must be the same as generated degree sequences"
     @assert length.(degs) == length.(active_nodes) "Size of degree sequence must match number of active nodes in each layer"
     vs = collect(1:n)
-    orderings = [find_ranking(vs, rho, verbose).ranking for rho in rhos]
+    orderings = [find_ranking(vs, rho, verbose).ranking for rho in taus]
     degs_correlated = Vector{Vector{Int}}()
     for i in eachindex(degs)
         degs_layer = zeros(Int, length(degs[i]))
@@ -60,7 +60,7 @@ function degrees_correlation(
         if length(active_nodes[i]) == n
             adjusted_ordering = orderings[i]
         else
-            mapping = Dict(zip(active_nodes[i],1:length(active_nodes[i])))
+            mapping = Dict(zip(active_nodes[i], 1:length(active_nodes[i])))
             adjusted_ordering = [mapping[e] for e in orderings[i] if e in Set(active_nodes[i])]
         end
         for j in eachindex(degs_sorted)
@@ -71,19 +71,7 @@ function degrees_correlation(
     return degs_correlated
 end
 
-struct MLNABCDParams
-    w::Vector{Int}
-    s::Vector{Int}
-    ξ::Float64
-    μ::Nothing
-    isCL::Bool
-    islocal::Bool
-    hasoutliers::Bool
-
-    function MLNABCDParams(w, s, ξ)
-        length(w) == sum(s) || throw(ArgumentError("inconsistent data"))
-        0 ≤ ξ ≤ 1 || throw(ArgumentError("inconsistent data ξ"))
-
-        new(w, s, ξ, nothing, false, false, false)
-    end
+function generate_degrees(cfg::MLNConfig, active_nodes::Vector{Vector{Int}}, verbose::Bool=false)
+    degs = ABCDGraphGenerator.sample_degrees.(cfg.gammas, cfg.d_mins, cfg.d_maxs, cfg.ns, Ref(cfg.d_max_iter))
+    return degrees_correlation(cfg.n, degs, cfg.taus, active_nodes, verbose)
 end
