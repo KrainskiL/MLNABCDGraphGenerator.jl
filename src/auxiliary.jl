@@ -41,39 +41,47 @@ struct MLNConfig
     xis::Vector{Float64}
     skip_edges_correlation::Bool
     edges_cor_matrix::Matrix{Float64}
+end
 
-    function MLNConfig(seed, n, edges_cor, layer_params, d_max_iter, c_max_iter,
-        t, eps, edges_filename, communities_filename)
-        seed = isempty(seed) ? nothing : parse(Int, seed)
-        isnothing(seed) || Random.seed!(seed)
-        lparams = readdlm(layer_params, ',', Float64, skipstart=1)
-        l = size(lparams)[1]
-        skip_edges_correlation = false
-        if isempty(edges_cor)
-            skip_edges_correlation = true
-            edges_cor_matrix = zeros(Float64, l, l)
-        elseif occursin(".csv", edges_cor)
-            edges_cor_matrix = convert.(Float64, readdlm(edges_cor, ',', skipstart=1)[:, 2:end])
-            x, y = size(edges_cor_matrix)
-            @assert (x == l) && (y == l) "Edges correlation matrix size don't match number of layers from $(layer_params)"
-        else
-            edges_cor = parse(Float64, edges_cor)
-            edges_cor_matrix = fill(edges_cor, l, l)
-        end
-        qs = lparams[:, 1]
-        new(seed, n, edges_cor, layer_params, d_max_iter, c_max_iter,
-            t, eps, edges_filename, communities_filename,
-            l, qs, round.(Int, n .* qs), lparams[:, 2], lparams[:, 3],
-            lparams[:, 4], Int.(lparams[:, 5]), Int.(lparams[:, 6]), lparams[:, 7],
-            Int.(lparams[:, 8]), Int.(lparams[:, 9]), lparams[:, 10],
-            skip_edges_correlation, edges_cor_matrix)
+function MLNConfig(seed::Union{Int,Nothing},
+    n::Int,
+    edges_cor::String,
+    layer_params::String,
+    d_max_iter::Int,
+    c_max_iter::Int,
+    t::Int,
+    eps::Float64,
+    edges_filename::String,
+    communities_filename::String)
+
+    isnothing(seed) || Random.seed!(seed)
+    lparams = readdlm(layer_params, ',', Float64, skipstart=1)
+    l = size(lparams)[1]
+    skip_edges_correlation = false
+    if isempty(edges_cor)
+        skip_edges_correlation = true
+        edges_cor_matrix = zeros(Float64, l, l)
+    elseif occursin(".csv", edges_cor)
+        edges_cor_matrix = convert.(Float64, readdlm(edges_cor, ',', skipstart=1)[:, 2:end])
+        x, y = size(edges_cor_matrix)
+        @assert (x == l) && (y == l) "Edges correlation matrix size don't match number of layers from $(layer_params)"
+    else
+        edges_cor = parse(Float64, edges_cor)
+        edges_cor_matrix = fill(edges_cor, l, l)
     end
+    qs = lparams[:, 1]
+    MLNConfig(seed, n, edges_cor, layer_params, d_max_iter, c_max_iter,
+        t, eps, edges_filename, communities_filename,
+        l, qs, round.(Int, n .* qs), lparams[:, 2], lparams[:, 3],
+        lparams[:, 4], Int.(lparams[:, 5]), Int.(lparams[:, 6]), lparams[:, 7],
+        Int.(lparams[:, 8]), Int.(lparams[:, 9]), lparams[:, 10],
+        skip_edges_correlation, edges_cor_matrix)
 end
 
 function parse_config(filename::String)::MLNConfig
     conf = Pkg.TOML.parsefile(filename)
-
-    return MLNConfig(conf["seed"],
+    return MLNConfig(
+        length(conf["seed"]) > 0 ? parse(Int, conf["seed"]) : nothing,
         parse(Int, conf["n"]),
         conf["edges_cor"],
         conf["layer_params"],
@@ -81,15 +89,18 @@ function parse_config(filename::String)::MLNConfig
         parse(Int, conf["c_max_iter"]),
         parse(Int, conf["t"]),
         parse(Float64, conf["e"]),
-        conf["edges_filename"],
-        conf["communities_filename"])
+        haskey(conf, "edges_filename") ? conf["edges_filename"] : "edges.dat",
+        haskey(conf, "communities_filename") ? conf["communities_filename"] : "communities.dat")
 end
 
 function generate_active_nodes(cfg::MLNConfig)
     return sample.(Ref(1:cfg.n), cfg.ns, replace=false, ordered=true)
 end
 
-function generate_abcd(cfg::MLNConfig, degs, coms_sizes, coms)
+function generate_abcd(cfg::MLNConfig,
+    degs::Vector{Vector{Int}},
+    coms_sizes::Vector{Vector{Int}},
+    coms::Vector{Vector{Int}})
     p = MLNABCDGraphGenerator.ABCDParams.(degs, coms_sizes, cfg.xis)
     return ABCDGraphGenerator.config_model.(coms, p)
 end

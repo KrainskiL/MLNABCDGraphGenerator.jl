@@ -18,20 +18,30 @@ function map_communities_to_agents(n_agents::Int, communities::Vector{Vector{Int
     return coms_agents
 end
 
-function common_agents_edges(edges_agents::Vector{Set{Tuple{Int64,Int64}}}, active_nodes::Vector{Vector{Int64}})
-    edges_on_common_agents_dict = Dict()
+function common_agents_dict(active_nodes::Vector{Vector{Int64}})
+    common_agents_dict = Dict{Tuple{Int,Int},Set{Int}}()
+    for i in eachindex(active_nodes)
+        for j in (i+1):length(active_nodes)
+            common_agents_dict[(i, j)] = BitSet(intersect(Set(active_nodes[i]), Set(active_nodes[j])))
+        end
+    end
+    return common_agents_dict
+end
+
+function common_agents_edges(edges_agents::Vector{Set{Tuple{Int64,Int64}}}, common_agents_dict::Dict{Tuple{Int,Int},Set{Int}})
+    edges_on_common_agents_dict = Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}}()
     for i in eachindex(edges_agents)
         for j in (i+1):length(edges_agents)
-            common_agents = intersect(Set(active_nodes[i]), Set(active_nodes[j]))
-            edges_i = Set([e for e in edges_agents[i] if (e[1] in common_agents) && (e[2] in common_agents)])
-            edges_j = Set([e for e in edges_agents[j] if (e[1] in common_agents) && (e[2] in common_agents)])
-            edges_on_common_agents_dict[(i, j)] = (copy(edges_i), copy(edges_j))
+            common_agents = common_agents_dict[(i, j)]
+            edges_i = Set([e for e in edges_agents[i] if issubset(e, common_agents)])
+            edges_j = Set([e for e in edges_agents[j] if issubset(e, common_agents)])
+            edges_on_common_agents_dict[(i, j)] = [copy(edges_i), copy(edges_j)]
         end
     end
     return edges_on_common_agents_dict
 end
 
-function map_neighbours(edges, coms)
+function map_neighbours(edges::Set{Tuple{Int,Int}}, coms::Vector{Int})
     nmap = Dict{Int,Set{Int}}()
     for (src, dst) in edges
         mult = coms[src] == coms[dst] ? 1 : -1 #positive for communities, negative for background
@@ -46,7 +56,7 @@ function map_neighbours(edges, coms)
     return nmap
 end
 
-function map_communities(edges, coms)
+function map_communities(edges::Set{Tuple{Int,Int}}, coms::Vector{Int})
     nmap = Dict{Int,Set{Tuple{Int,Int}}}()
     for (src, dst) in edges
         src_com = coms[src]
@@ -60,7 +70,11 @@ function map_communities(edges, coms)
     end
     return nmap
 end
-function neighbours_common_agents_edges(edges_common_agents, coms_agents::Vector{Vector{Int64}})
+
+function neighbours_common_agents_edges(
+    edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
+    coms_agents::Vector{Vector{Int64}})
+
     nbhs_edges_on_common_agents_dict = Dict()
     for (k, v) in edges_common_agents
         nbhs_edges_on_common_agents_dict[k] = (map_neighbours(v[1], coms_agents[k[1]]), map_neighbours(v[2], coms_agents[k[2]]))
@@ -68,7 +82,10 @@ function neighbours_common_agents_edges(edges_common_agents, coms_agents::Vector
     return nbhs_edges_on_common_agents_dict
 end
 
-function edges_in_communities_common_agents_edges(edges_common_agents, coms_agents::Vector{Vector{Int64}})
+function edges_in_communities_common_agents_edges(
+    edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
+    coms_agents::Vector{Vector{Int64}})
+
     edges_in_coms = Dict()
     for (k, v) in edges_common_agents
         edges_in_coms[k] = (map_communities(v[1], coms_agents[k[1]]), map_communities(v[2], coms_agents[k[2]]))
@@ -76,39 +93,48 @@ function edges_in_communities_common_agents_edges(edges_common_agents, coms_agen
     return edges_in_coms
 end
 
-function calculate_edges_cor(edges_common_agents, rounded=false)
-    current_rs = []
+function calculate_edges_cor(
+    edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
+    desired_cor::Matrix{Float64})
+
+    l = size(desired_cor)[1]
+    current_rs = deepcopy(desired_cor)
     for (k, v) in edges_common_agents
         e1, e2 = v
         r = length(intersect(e1, e2)) / (min(length(e1), length(e2)))
-        if rounded
-            r = round(r, digits=4)
-        end
-        push!(current_rs, (k, r))
+        current_rs[k...] = isnan(r) ? 0.0 : r
     end
-    return current_rs
+    rs_diff = current_rs - desired_cor
+    rs_dist = 0
+    for i in 1:l
+        for j in (i+1):l
+            rs_dist += rs_diff[i, j]^2
+        end
+    end
+    return (current_rs, rs_diff, rs_dist)
 end
 
-function pick_cor_to_improve(cor_vec, desired_cor::Matrix{Float64}, method::String="weighted")
-    @assert method in ["weighted", "uniform", "e-greedy"] "Method must bed weighted, uniform or e-greedy, got $(method)"
-    cor_diff = []
-    for (layers, current_cor) in cor_vec
-        diff = current_cor - desired_cor[layers...]
-        diff = isnan(diff) ? 0.0 : diff
-        push!(cor_diff, (layers, diff))
+function pick_cor_to_improve(cor_diff::Matrix{Float64}, method::String="weighted")
+    @assert method in ["weighted", "uniform", "e-greedy"] "Method must be weighted, uniform or e-greedy, got $(method)"
+    l = size(cor_diff)[1]
+    cor_diff_vec = []
+    for i in 1:l
+        for j in (i+1):l
+            push!(cor_diff_vec, ((i, j), cor_diff[i, j]))
+        end
     end
-    cor_diff_values = abs.(getindex.(cor_diff, 2))
+    cor_diff_values = abs.(getindex.(cor_diff_vec, 2))
     if method == "uniform"
-        pick = rand(cor_diff)
+        pick = rand(cor_diff_vec)
     elseif method == "weighted"
-        pick = sample(cor_diff, Weights(cor_diff_values))
+        pick = sample(cor_diff_vec, Weights(cor_diff_values))
     else
         ϵ = 0.5
         max_diff_idx = argmax(cor_diff_values)
-        other_weight = (1 - ϵ) / (length(cor_diff) - 1)
-        weights = fill(other_weight, length(cor_diff))
+        other_weight = (1 - ϵ) / (length(cor_diff_vec) - 1)
+        weights = fill(other_weight, length(cor_diff_vec))
         weights[max_diff_idx] = ϵ
-        pick = sample(cor_diff, Weights(weights))
+        pick = sample(cor_diff_vec, Weights(weights))
     end
     layers, diff = pick
     if diff > 0
@@ -121,14 +147,26 @@ function pick_cor_to_improve(cor_vec, desired_cor::Matrix{Float64}, method::Stri
     return (layers, direction)
 end
 
-function write_cor_diff_to_file(io, cor_vec, desired_cor::Matrix{Float64})
-    cor_diff = [(join(e[1], '-'), e[2] - desired_cor[e[1][1], e[1][2]]) for e in cor_vec]
-    println(io, join(getindex.(sort(cor_diff, by=x -> x[1]), 2), ','))
+function write_cor_diff_to_file(io::IOStream, cor_diff::Matrix{Float64}, cor_dist::Float64)
+    l = size(cor_diff)[1]
+    line = ""
+    for i in 1:l
+        for j in (i+1):l
+            line *= string(cor_diff[i, j]) * ","
+        end
+    end
+    println(io, line * string(cor_dist))
 end
 
-function increase_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common, neighbours, coms_agents, perc_rewire::Float64=0.4, verbose::Bool=false)
-    n_rewire = ceil(Int, perc_rewire * min(length(edges[1]), length(edges[2])))
-    adjusted = 0
+function increase_edges_correlation!(layers::Tuple{Int,Int},
+    edges::Vector{Set{Tuple{Int,Int}}},
+    edges_common::Vector{Set{Tuple{Int,Int}}},
+    neighbours::Vector{Dict{Int,Set{Int}}},
+    coms_agents::Vector{Vector{Int}},
+    perc_rewire::Float64,
+    verbose::Bool=false)
+    n_rewire = ceil(Int, perc_rewire * minimum(length.(edges_common)))
+    adjusted = false
     for _ in 1:n_rewire
         primary, secondary = shuffle([1, 2])
         layer_sec = layers[secondary]
@@ -147,7 +185,7 @@ function increase_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common
         extrema((v_prim, u_prim)) in edges_sec && continue #edge already exists
         length(Set([u, v, u_prim, v_prim])) != 4 && continue #u,v,u_prim,v_prim are 4 distinct nodes
         verbose && println("Wiring $(u_prim)-$(v_prim) and $(u)-$(v). Breaking $(u)-$(u_prim) and $(v)-$(v_prim)")
-        adjusted += 1
+        adjusted = true
         #Push new edges and neighbours
         @assert !((u, v) in edges[layer_sec])
         @assert !(extrema((u_prim, v_prim)) in edges[layer_sec])
@@ -169,14 +207,18 @@ function increase_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common
         delete!(nbs_sec[mult*u_prim], u)
         delete!(nbs_sec[mult*v_prim], v)
     end
-    adjust_ratio = round(adjusted * 100 / n_rewire, digits=2)
-    verbose && println("Adjusted edges percentage:", adjust_ratio)
-    return adjust_ratio
+    return adjusted
 end
 
-function decrease_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common, edges_in_coms, coms_agents, perc_rewire::Float64=0.4, verbose::Bool=false)
-    n_rewire = ceil(Int, perc_rewire * min(length(edges[1]), length(edges[2])))
-    adjusted = 0
+function decrease_edges_correlation!(layers::Tuple{Int,Int},
+    edges::Vector{Set{Tuple{Int,Int}}},
+    edges_common::Vector{Set{Tuple{Int,Int}}},
+    edges_in_coms::Vector{Dict{Int,Set{Tuple{Int,Int}}}},
+    coms_agents::Vector{Vector{Int}},
+    perc_rewire::Float64,
+    verbose::Bool=false)
+    n_rewire = ceil(Int, perc_rewire * minimum(length.(edges_common)))
+    adjusted = false
     for _ in 1:n_rewire
         primary, secondary = shuffle([1, 2])
         layer_sec = layers[secondary]
@@ -194,7 +236,7 @@ function decrease_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common
         extrema((u, u_prim)) in edges_sec && continue #edge already exists
         extrema((v, v_prim)) in edges_sec && continue #edge already exists
         verbose && println("Wiring $(u)-$(u_prim) and $(v)-$(v_prim). Breaking $(u)-$(v) and $(u_prim)-$(v_prim)")
-        adjusted += 1
+        adjusted = true
         #Push new edges and neighbours
         new_edge1 = extrema((u, u_prim))
         new_edge2 = extrema((v, v_prim))
@@ -209,47 +251,59 @@ function decrease_edges_correlation!(layers::Tuple{Int,Int}, edges, edges_common
         delete!(coms_edges_sec[com], (u, v))
         delete!(coms_edges_sec[com], (u_prim, v_prim))
     end
-    adjust_ratio = round(adjusted * 100 / n_rewire, digits=2)
-    verbose && println("Adjusted edges percentage:", adjust_ratio)
-    return adjust_ratio
+    return adjusted
 end
 
-function adjust_edges_correlation!(cfg::MLNConfig, edges, coms::Vector{Vector{Int}},
+function adjust_edges_correlation(cfg::MLNConfig,
+    edges::Vector{Set{Tuple{Int,Int}}},
+    coms::Vector{Vector{Int}},
     active_nodes::Vector{Vector{Int}},
-    verbose::Bool=false, save_cor_change_to_file::Bool=false)
+    verbose::Bool=false,
+    save_cor_change_to_file::Bool=false)
 
     cfg.skip_edges_correlation && return nothing
-    edges_common_agents = common_agents_edges(edges, active_nodes)
-    edges_cor = calculate_edges_cor(edges_common_agents)
-    avg_adjust_ratio = []
+    best_edges = working_edges = deepcopy(edges)
+    common_agents = common_agents_dict(active_nodes)
+    edges_common_agents = common_agents_edges(working_edges, common_agents)
+    edges_cor, cor_diff, cor_dist = calculate_edges_cor(edges_common_agents, cfg.edges_cor_matrix)
     if save_cor_change_to_file
         now_str = replace(string(now()), r"-|\.|:|T" => "_")
         io = open("edges_correlation_$(now_str).log", "a")
-        println(io, join(sort(join.(getindex.(edges_cor, 1), '-')), ','))
-        write_cor_diff_to_file(io, edges_cor, cfg.edges_cor_matrix)
+        line = ""
+        for i in 1:cfg.l
+            for j in (i+1):cfg.l
+                line *= string(i) * "-" * string(j) * ","
+            end
+        end
+        println(io, line * "l2_distance")
+        write_cor_diff_to_file(io, cor_diff, cor_dist)
     end
+    best_cor_dist = Inf
     for b in 1:cfg.t
-        layers, direction = pick_cor_to_improve(edges_cor, cfg.edges_cor_matrix, "weighted")
+        layers, direction = pick_cor_to_improve(cor_diff, "weighted")
         verbose && println("Adjusting correlation for layers:", layers, " Direction:", direction)
         i, j = layers
-        common_agents = intersect(Set(active_nodes[i]), Set(active_nodes[j]))
-        edges1 = Set([e for e in edges[i] if (e[1] in common_agents) && (e[2] in common_agents)])
-        edges2 = Set([e for e in edges[j] if (e[1] in common_agents) && (e[2] in common_agents)])
-        neighbours = (map_neighbours(edges1, coms[i]), map_neighbours(edges2, coms[j]))
-        edges_in_communities = (map_communities(edges1, coms[i]), map_communities(edges2, coms[j]))
+        edges_common = edges_common_agents[(i, j)]
         if direction == "increase"
-            adj_ratio = increase_edges_correlation!(layers, edges, (edges1, edges2), neighbours, coms, cfg.eps, verbose)
+            neighbours = map_neighbours.(edges_common, coms[[i, j]])
+            adjusted = increase_edges_correlation!(layers, working_edges, edges_common, neighbours, coms, cfg.eps, verbose)
         elseif direction == "decrease"
-            adj_ratio = decrease_edges_correlation!(layers, edges, (edges1, edges2), edges_in_communities, coms, cfg.eps, verbose)
+            edges_in_communities = map_communities.(edges_common, coms[[i, j]])
+            adjusted = decrease_edges_correlation!(layers, working_edges, edges_common, edges_in_communities, coms, cfg.eps, verbose)
         else
             continue
         end
-        push!(avg_adjust_ratio, adj_ratio)
-        edges_common_agents = common_agents_edges(edges, active_nodes)
-        edges_cor = calculate_edges_cor(edges_common_agents)
-        save_cor_change_to_file && write_cor_diff_to_file(io, edges_cor, cfg.edges_cor_matrix)
+        if adjusted
+            edges_common_agents = common_agents_edges(working_edges, common_agents)
+            edges_cor, cor_diff, cor_dist = calculate_edges_cor(edges_common_agents, cfg.edges_cor_matrix)
+        end
+        if b > 100 && cor_dist < best_cor_dist
+            best_cor_dist = cor_dist
+            best_edges = deepcopy(working_edges)
+            verbose && println("Saved new best edges at batch:", b, " with best distance:", best_cor_dist)
+        end
+        save_cor_change_to_file && write_cor_diff_to_file(io, cor_diff, cor_dist)
     end
-    verbose && print("Average adjust hit rate:", mean(avg_adjust_ratio))
     save_cor_change_to_file && close(io)
-    return nothing
+    return best_edges
 end

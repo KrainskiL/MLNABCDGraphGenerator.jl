@@ -56,7 +56,8 @@ function shuffle_communities(r::Float64, a::Vector{Vector{Int}})
     return shuffled_a
 end
 
-function communities_correlation(n::Int,
+function communities_correlation(
+    n::Int,
     coms::Vector{Vector{Int}},
     rs::Vector{Float64},
     active_nodes::Vector{Vector{Int}})

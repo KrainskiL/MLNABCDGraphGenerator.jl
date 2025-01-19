@@ -1,6 +1,6 @@
 using MLNABCDGraphGenerator
 
-@info "Usage: julia mlnabcd_sampler.jl config_filename"
+@info "Usage: julia mlnabcd_sampler.jl config_filename.toml"
 @info "For the syntax of config_filename see example_config.toml file"
 
 filename = ARGS[1]
@@ -17,8 +17,8 @@ edges = MLNABCDGraphGenerator.generate_abcd(config, degrees, com_sizes, coms)
 edges = MLNABCDGraphGenerator.map_edges_to_agents(edges, active_nodes)
 coms = MLNABCDGraphGenerator.map_communities_to_agents(config.n, coms, active_nodes)
 #Adjust edges correlation
-MLNABCDGraphGenerator.adjust_edges_correlation!(config, edges, coms, active_nodes, false, false)
+edges_rewired = MLNABCDGraphGenerator.adjust_edges_correlation(config, edges, coms, active_nodes, false, false)
 #Save edges to file
-MLNABCDGraphGenerator.write_edges(config, edges)
+MLNABCDGraphGenerator.write_edges(config, edges_rewired)
 #Save communities to file
 MLNABCDGraphGenerator.write_edges(config, coms)
