@@ -3,9 +3,9 @@ name: Documentation
 on:
   push:
     branches:
-      - main
-    tags: '*'
-  pull_request:
+      - documentation
+  #   tags: '*'
+  # pull_request:
 
 jobs:
   build:
@@ -29,4 +29,8 @@ jobs:
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: julia --project=docs/ docs/make.jl
+        run: julia --project=docs/ --code-coverage=user docs/make.jl
+      - name:
+        uses: julia-actions/julia-processcoverage@v1
+      - name: Codecov
+        uses: codecov/codecov-action@v5
