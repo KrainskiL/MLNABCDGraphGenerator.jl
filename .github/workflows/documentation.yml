@@ -30,5 +30,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: julia --project=docs/ --code-coverage=user docs/make.jl
-      - name: Code coverage
-        run: julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+      - name: Tests
+        uses: julia-actions/julia-runtest@v1
+      - name: Prepare coverage
+        uses: julia-actions/julia-processcoverage@v1
+      - name: Upload coverage Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
