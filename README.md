@@ -1,4 +1,6 @@
 # MLNABCDGraphGenerator.jl
+[![docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://krainskil.github.io/MLNABCDGraphGenerator.jl/dev/)
+[![codecov](https://codecov.io/github/KrainskiL/MLNABCDGraphGenerator.jl/graph/badge.svg?token=UqUJHR1ydp)](https://codecov.io/github/KrainskiL/MLNABCDGraphGenerator.jl)
 ## Installation
 Run the following commands in your Julia REPL:
 ```julia
