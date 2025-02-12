@@ -21,4 +21,4 @@ edges_rewired = MLNABCDGraphGenerator.adjust_edges_correlation(config, edges, co
 #Save edges to file
 MLNABCDGraphGenerator.write_edges(config, edges_rewired)
 #Save communities to file
-MLNABCDGraphGenerator.write_edges(config, coms)
+MLNABCDGraphGenerator.write_communities(config, coms)

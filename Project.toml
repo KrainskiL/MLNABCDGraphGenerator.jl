@@ -20,3 +20,10 @@ DelimitedFiles = "1.9.1"
 Pkg = "1.11.0"
 Random = "1.11.0"
 StatsBase = "0.34.3"
+
+[extras]
+Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Markdown", "Test"]
