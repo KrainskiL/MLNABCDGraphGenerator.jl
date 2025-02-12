@@ -21,8 +21,9 @@ edges_cor = "edges_cor_matrix.csv"       # desired edges correlation
 layer_params = "layer_params.csv"        # file with parameters for each layer
 d_max_iter = "1000"                      # maximum number of iterations for sampling degrees
 c_max_iter = "1000"                      # maximum number of iterations for sampling cluster sizes
-t = "500"                                # number of batches for edge rewiring
-e = "0.05"                               # percent of edges to be rewired in each rewiring batch
+t = "100"                                # number of batches for edge rewiring
+e = "0.01"                               # percent of edges to be rewired in each rewiring batch
+d = "2"                                  # dimensionality of latent space
 edges_filename = "edges.dat"             # name of file for output edges
 communities_filename = "communities.dat" # name of file for output communities
 ```
@@ -38,7 +39,7 @@ Example layers specification formatted as Markdown table (see also `utils/layer_
 
 Edges correlation matrix is provided in file referenced under `edges_cor` key.
 If `edges_cor = ""` edges correlation step is skipped.
-If `edges_cor` is a value between 0.0 and 1.0, e.g. `edges_cor = 0.5`, all pairwise correlations between layers will be adjusted to the given value.
+If `edges_cor` is a value between 0.0 and 1.0, e.g. `edges_cor = "0.5"`, all pairwise correlations between layers will be adjusted to the given value.
 Example correlation matrix formatted as Markdown table (see also `utils/edges_cor_matrix.csv`):
 
 |   | 1    | 2    | 3    | 4    |
@@ -63,7 +64,7 @@ Structure of the `communities.dat` is as follows:
 ```
 community_number layer_number
 ```
-Each layer contains assignments for all `n` agents. Inactive agents have are assigned to community 0.
+Each layer contains assignments for all `n` agents. Inactive agents are assigned to community 0.
 
 Structure of the `edges.dat` is as follows:
 ```

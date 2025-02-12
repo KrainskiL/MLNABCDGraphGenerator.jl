@@ -9,5 +9,6 @@ d_max_iter = "1000"                      # maximum number of iterations for samp
 c_max_iter = "1000"                      # maximum number of iterations for sampling cluster sizes
 t = "100"                                # number of batches for edge rewiring
 e = "0.01"                               # percent of edges to be rewired in each rewiring batch
+d = "2"                                  # dimensionality of latent space
 edges_filename = "edges.dat"             # name of file for output edges
 communities_filename = "communities.dat" # name of file for output communities

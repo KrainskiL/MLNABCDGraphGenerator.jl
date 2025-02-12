@@ -1,4 +1,13 @@
 
+"""
+    map_edges_to_agents(edges::Vector{Set{Tuple{Int64,Int64}}}, active_nodes::Vector{Vector{Int64}})
+
+Translates edges to agent-based representation.
+
+**Arguments**
+* `edges::Vector{Set{Tuple{Int64,Int64}}}` edges based on layer-specific node labels
+* `active_nodes::Vector{Vector{Int64}}` IDs of active agents
+"""
 function map_edges_to_agents(edges::Vector{Set{Tuple{Int64,Int64}}}, active_nodes::Vector{Vector{Int64}})
     edges_agents = Vector{Set{Tuple{Int64,Int64}}}()
     for (i, layer) in enumerate(edges)
@@ -7,6 +16,19 @@ function map_edges_to_agents(edges::Vector{Set{Tuple{Int64,Int64}}}, active_node
     return edges_agents
 end
 
+"""
+    map_communities_to_agents(
+        n_agents::Int,
+        communities::Vector{Vector{Int64}},
+        active_nodes::Vector{Vector{Int64}})
+
+Translates communities assignment to agent-based representation and imputes 0 for non-active agents.
+
+**Arguments**
+* `n_agents::Int` number of agents
+* `communities::Vector{Vector{Int64}}` assignment of nodes to communities
+* `active_nodes::Vector{Vector{Int64}}` IDs of active agents
+"""
 function map_communities_to_agents(n_agents::Int, communities::Vector{Vector{Int64}}, active_nodes::Vector{Vector{Int64}})
     l = length(communities)
     coms_agents = [zeros(Int, n_agents) for i in 1:l]
@@ -18,6 +40,14 @@ function map_communities_to_agents(n_agents::Int, communities::Vector{Vector{Int
     return coms_agents
 end
 
+"""
+    common_agents_dict(active_nodes::Vector{Vector{Int64}})
+
+Finds common active agents between all pairs of layers.
+
+**Arguments**
+* `active_nodes::Vector{Vector{Int64}}` IDs of active agents
+"""
 function common_agents_dict(active_nodes::Vector{Vector{Int64}})
     common_agents_dict = Dict{Tuple{Int,Int},Set{Int}}()
     for i in eachindex(active_nodes)
@@ -28,6 +58,17 @@ function common_agents_dict(active_nodes::Vector{Vector{Int64}})
     return common_agents_dict
 end
 
+"""
+    common_agents_edges(
+        edges_agents::Vector{Set{Tuple{Int64,Int64}}},
+        common_agents_dict::Dict{Tuple{Int,Int},Set{Int}})
+
+Finds edges including only common active agents for all pairs of layers.
+
+**Arguments**
+* `edges_agents::Vector{Set{Tuple{Int64,Int64}}}` agent-based edges of multilayer network
+* `common_agents_dict::Dict{Tuple{Int,Int},Set{Int}}` mapping of common active agents between layers
+"""
 function common_agents_edges(edges_agents::Vector{Set{Tuple{Int64,Int64}}}, common_agents_dict::Dict{Tuple{Int,Int},Set{Int}})
     edges_on_common_agents_dict = Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}}()
     for i in eachindex(edges_agents)
@@ -41,6 +82,15 @@ function common_agents_edges(edges_agents::Vector{Set{Tuple{Int64,Int64}}}, comm
     return edges_on_common_agents_dict
 end
 
+"""
+    map_neighbours(edges::Set{Tuple{Int,Int}}, coms::Vector{Int})
+
+Finds neigbhours of each agent within and outside of given node community.
+
+**Arguments**
+* `edges::Set{Tuple{Int,Int}}` agent-based edges of multilayer network
+* `coms::Vector{Int}` assignment of nodes to communities
+"""
 function map_neighbours(edges::Set{Tuple{Int,Int}}, coms::Vector{Int})
     nmap = Dict{Int,Set{Int}}()
     for (src, dst) in edges
@@ -56,6 +106,15 @@ function map_neighbours(edges::Set{Tuple{Int,Int}}, coms::Vector{Int})
     return nmap
 end
 
+"""
+    map_communities(edges::Set{Tuple{Int,Int}}, coms::Vector{Int})
+
+Finds edges within communities and background graph.
+
+**Arguments**
+* `edges::Set{Tuple{Int,Int}}` agent-based edges of multilayer network
+* `coms::Vector{Int}` assignment of nodes to communities
+"""
 function map_communities(edges::Set{Tuple{Int,Int}}, coms::Vector{Int})
     nmap = Dict{Int,Set{Tuple{Int,Int}}}()
     for (src, dst) in edges
@@ -71,6 +130,17 @@ function map_communities(edges::Set{Tuple{Int,Int}}, coms::Vector{Int})
     return nmap
 end
 
+"""
+    neighbours_common_agents_edges(
+        edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
+        coms_agents::Vector{Vector{Int64}})
+
+Finds neighbours of each agent in graphs induced by common agents between layers.
+
+**Arguments**
+* `edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}}` graphs induced by common agents between layers
+* `coms_agents::Vector{Vector{Int64}}` assignment of nodes to communities in each layer
+"""
 function neighbours_common_agents_edges(
     edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
     coms_agents::Vector{Vector{Int64}})
@@ -82,6 +152,17 @@ function neighbours_common_agents_edges(
     return nbhs_edges_on_common_agents_dict
 end
 
+"""
+    edges_in_communities_common_agents_edges(
+        edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
+        coms_agents::Vector{Vector{Int64}})
+
+Finds edges within communities and background graph in graphs induced by common agents between layers.
+
+**Arguments**
+* `edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}}` graphs induced by common agents between layers
+* `coms_agents::Vector{Vector{Int64}}` assignment of nodes to communities in each layer
+"""
 function edges_in_communities_common_agents_edges(
     edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
     coms_agents::Vector{Vector{Int64}})
@@ -93,6 +174,17 @@ function edges_in_communities_common_agents_edges(
     return edges_in_coms
 end
 
+"""
+    calculate_edges_cor(
+        edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
+        desired_cor::Matrix{Float64})
+
+Calculates correlation between edges in each pair of layers, difference between desired correlation and distance between desired correlation matrix and current correlation matrix.
+
+**Arguments**
+* `edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}}` graphs induced by common agents between layers
+* `desired_cor::Matrix{Float64}` input correlation matrix between layers
+"""
 function calculate_edges_cor(
     edges_common_agents::Dict{Tuple{Int,Int},Vector{Set{Tuple{Int,Int}}}},
     desired_cor::Matrix{Float64})
@@ -114,6 +206,15 @@ function calculate_edges_cor(
     return (current_rs, rs_diff, rs_dist)
 end
 
+"""
+    pick_cor_to_improve(cor_diff::Matrix{Float64}, method::String="weighted")
+
+Selects entry of correlation matrix to improve in next batch.
+
+**Arguments**
+* `cor_diff::Matrix{Float64}` difference between desired and current correlation matrices
+* `method::String="weighted"` method of entry selection
+"""
 function pick_cor_to_improve(cor_diff::Matrix{Float64}, method::String="weighted")
     @assert method in ["weighted", "uniform", "e-greedy"] "Method must be weighted, uniform or e-greedy, got $(method)"
     l = size(cor_diff)[1]
@@ -147,6 +248,16 @@ function pick_cor_to_improve(cor_diff::Matrix{Float64}, method::String="weighted
     return (layers, direction)
 end
 
+"""
+    write_cor_diff_to_file(io::IOStream, cor_diff::Matrix{Float64}, cor_dist::Float64)
+
+Writes differences between current and desired correlation matrices entries to file. Used to track changes in empirical correlation between batches.
+
+**Arguments**
+* `io::IOStream` IO handler to a file
+* `cor_diff::Matrix{Float64}` difference between desired and current correlation matrices
+* `cor_dist::Float64` distance between desired and current correlation matrices
+"""
 function write_cor_diff_to_file(io::IOStream, cor_diff::Matrix{Float64}, cor_dist::Float64)
     l = size(cor_diff)[1]
     line = ""
@@ -158,6 +269,26 @@ function write_cor_diff_to_file(io::IOStream, cor_diff::Matrix{Float64}, cor_dis
     println(io, line * string(cor_dist))
 end
 
+"""
+    increase_edges_correlation!(layers::Tuple{Int,Int},
+        edges::Vector{Set{Tuple{Int,Int}}},
+        edges_common::Vector{Set{Tuple{Int,Int}}},
+        neighbours::Vector{Dict{Int,Set{Int}}},
+        coms_agents::Vector{Vector{Int}},
+        perc_rewire::Float64,
+        verbose::Bool=false)
+
+Increases correlation between edges in two selected layers.
+
+**Arguments**
+* `layers::Tuple{Int,Int}` IDs of modified layers
+* `edges::Vector{Set{Tuple{Int,Int}}}` edges of multilayer network modified in-place to keep state between batches
+* `edges_common::Vector{Set{Tuple{Int,Int}}}` edges on common active agents between layers
+* `neighbours::Vector{Dict{Int,Set{Int}}}` mapping of neighbours of agents
+* `coms_agents::Vector{Vector{Int}}` assignment of agents to communities
+* `perc_rewire::Float64` fraction of edges to be used for rewiring attempt
+* `verbose::Bool=false` verbose logging flag
+"""
 function increase_edges_correlation!(layers::Tuple{Int,Int},
     edges::Vector{Set{Tuple{Int,Int}}},
     edges_common::Vector{Set{Tuple{Int,Int}}},
@@ -210,6 +341,26 @@ function increase_edges_correlation!(layers::Tuple{Int,Int},
     return adjusted
 end
 
+"""
+    decrease_edges_correlation!(layers::Tuple{Int,Int},
+        edges::Vector{Set{Tuple{Int,Int}}},
+        edges_common::Vector{Set{Tuple{Int,Int}}},
+        neighbours::Vector{Dict{Int,Set{Int}}},
+        coms_agents::Vector{Vector{Int}},
+        perc_rewire::Float64,
+        verbose::Bool=false)
+
+Decreases correlation between edges in two selected layers.
+
+**Arguments**
+* `layers::Tuple{Int,Int}` IDs of modified layers
+* `edges::Vector{Set{Tuple{Int,Int}}}` edges of multilayer network modified in-place to keep state between batches
+* `edges_common::Vector{Set{Tuple{Int,Int}}}` edges on common active agents between layers
+* `edges_in_coms::Vector{Dict{Int,Set{Tuple{Int,Int}}}}` mapping of edges withing communities and background graph
+* `coms_agents::Vector{Vector{Int}}` assignment of agents to communities
+* `perc_rewire::Float64` fraction of edges to be used for rewiring attempt
+* `verbose::Bool=false` verbose logging flag
+"""
 function decrease_edges_correlation!(layers::Tuple{Int,Int},
     edges::Vector{Set{Tuple{Int,Int}}},
     edges_common::Vector{Set{Tuple{Int,Int}}},
@@ -254,6 +405,24 @@ function decrease_edges_correlation!(layers::Tuple{Int,Int},
     return adjusted
 end
 
+"""
+    adjust_edges_correlation(cfg::MLNConfig,
+        edges::Vector{Set{Tuple{Int,Int}}},
+        coms::Vector{Vector{Int}},
+        active_nodes::Vector{Vector{Int}},
+        verbose::Bool=false,
+        save_cor_change_to_file::Bool=false)
+
+Run `cfg.t` rewiring batches to match edges correlation between layers with desired `cfg.edges_cor_matrix` correlation matrix.
+
+**Arguments**
+* `cfg::MLNConfig` MLNABCD configuration
+* `edges::Vector{Set{Tuple{Int,Int}}}` agent-based edges of multilayer network before rewiring
+* `coms::Vector{Vector{Int}}` assignment of nodes to communities in each layer
+* `active_nodes::Vector{Vector{Int}}` IDs of active agents
+* `verbose::Bool=false` verbose logging flag
+* `save_cor_change_to_file::Bool=false` correlation changes file logging flag
+"""
 function adjust_edges_correlation(cfg::MLNConfig,
     edges::Vector{Set{Tuple{Int,Int}}},
     coms::Vector{Vector{Int}},

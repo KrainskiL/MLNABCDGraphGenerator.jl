@@ -1,12 +1,30 @@
 
-function sample_points(n::Int, d::Int)
+"""
+    sample_points(n::Int, d::Int)::Matrix{Float64}
+
+Samples normalized points in `d`-dimensional space.
+
+**Arguments**
+* `n::Int` number of points
+* `d::Int` number of dimensions
+"""
+function sample_points(n::Int, d::Int)::Matrix{Float64}
     points = randn(n, d)
     points ./= sqrt.(sum(x -> x^2, points, dims=2))
     points .*= rand(n) .^ (1 / d)
     return points
 end
 
-function assign_points(x::Matrix{Float64}, c::Vector{Int})
+"""
+    assign_points(x::Matrix{Float64}, c::Vector{Int})::Vector{Vector{Int}}
+
+Assigns points to communities based on the proximity in Euclidian space.
+
+**Arguments**
+* `x::Matrix{Float64}` coordinates of points
+* `c::Vector{Int}` sizes of communities
+"""
+function assign_points(x::Matrix{Float64}, c::Vector{Int})::Vector{Vector{Int}}
     @assert ndims(x) == 2
     @assert sum(c) == size(x, 1)
     c = shuffle(c)
@@ -32,7 +50,16 @@ function assign_points(x::Matrix{Float64}, c::Vector{Int})
     return res
 end
 
-function shuffle_communities(r::Float64, a::Vector{Vector{Int}})
+"""
+    shuffle_communities(r::Float64, a::Vector{Vector{Int}})::Vector{Vector{Int}}
+
+Shuffles assignment of nodes to communities to introduce correlation `r` between the layer and reference layer
+
+**Arguments**
+* `r::Float64` desired correlation between the layer and reference layer
+* `a::Vector{Vector{Int}}` assignment of nodes to communities
+"""
+function shuffle_communities(r::Float64, a::Vector{Vector{Int}})::Vector{Vector{Int}}
     shuffle_nodes = []
     for i in 1:length(a)
         for j in 1:length(a[i])
@@ -56,17 +83,36 @@ function shuffle_communities(r::Float64, a::Vector{Vector{Int}})
     return shuffled_a
 end
 
+"""
+    communities_correlation(
+        n::Int,
+        coms_sizes::Vector{Vector{Int}},
+        rs::Vector{Float64},
+        active_nodes::Vector{Vector{Int}},
+        d::Int)
+        ::Vector{Vector{Int}}
+
+Shuffles communities assignment to match correlations `rs` between network layers and hidden reference layer.
+
+**Arguments**
+* `n::Int` number of agents
+* `coms_sizes::Vector{Vector{Int}}` sizes of communities
+* `rs::Vector{Float64}` vector of desired correlations between each network layer and reference layer
+* `active_nodes::Vector{Vector{Int}}` IDs of active nodes
+* `d::Int` number of dimensions in reference space
+"""
 function communities_correlation(
     n::Int,
-    coms::Vector{Vector{Int}},
+    coms_sizes::Vector{Vector{Int}},
     rs::Vector{Float64},
-    active_nodes::Vector{Vector{Int}})
+    active_nodes::Vector{Vector{Int}},
+    d::Int)::Vector{Vector{Int}}
 
-    x = sample_points(n, 2)
+    x = sample_points(n, d)
     coms_correlated = Vector{Vector{Int}}()
-    for i in eachindex(coms)
+    for i in eachindex(coms_sizes)
         x_active = x[active_nodes[i], :]
-        a = assign_points(x_active, coms[i])
+        a = assign_points(x_active, coms_sizes[i])
         shuffled_a = shuffle_communities(rs[i], a)
         flattened = zeros(Int, length(active_nodes[i]))
         for (j, com) in enumerate(shuffled_a)
@@ -79,7 +125,18 @@ function communities_correlation(
     return coms_correlated
 end
 
+"""
+    generate_communities(cfg::MLNConfig, active_nodes::Vector{Vector{Int}})
+
+Samples sequences of community sizes from truncated power-law distribution.
+Then, assigns nodes to communities and shuffles the assignment to correlate layers.
+Returns sizes of communities and assignment of nodes to communities.
+
+**Arguments**
+* `cfg::MLNConfig` MLNABCD configuration
+* `active_nodes::Vector{Vector{Int}}` IDs of active nodes
+"""
 function generate_communities(cfg::MLNConfig, active_nodes::Vector{Vector{Int}})
     coms_sizes = ABCDGraphGenerator.sample_communities.(cfg.betas, cfg.c_mins, cfg.c_maxs, cfg.ns, Ref(cfg.c_max_iter))
-    return coms_sizes, communities_correlation(cfg.n, coms_sizes, cfg.rs, active_nodes)
+    return coms_sizes, communities_correlation(cfg.n, coms_sizes, cfg.rs, active_nodes, cfg.d)
 end
