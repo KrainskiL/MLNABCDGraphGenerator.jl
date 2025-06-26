@@ -7,7 +7,7 @@ cfg = MLNABCDGraphGenerator.parse_config(config_path)
 
 @testset "config" begin
     @test typeof(MLNABCDGraphGenerator.parse_config(config_path)) == MLNABCDGraphGenerator.MLNConfig
-    args = [nothing, 10, "", "layer_params.csv", 100, 100, 100, 0.01, 2, "edges.dat", "coms.dat"]
+    args = [nothing, 10, "", "example_layer_params.csv", 100, 100, 100, 0.01, 2, "edges.dat", "coms.dat"]
     cfg_no_edges_cor = MLNABCDGraphGenerator.MLNConfig(args...)
     @test cfg_no_edges_cor.skip_edges_correlation
     @test sum(cfg_no_edges_cor.edges_cor_matrix) == 0
@@ -66,6 +66,9 @@ end
 edges = MLNABCDGraphGenerator.map_edges_to_agents(edges, active_nodes)
 coms = MLNABCDGraphGenerator.map_communities_to_agents(cfg.n, coms, active_nodes)
 @testset "edges_rewiring" begin
+    edges_rewired = MLNABCDGraphGenerator.adjust_edges_correlation(cfg, edges, coms, active_nodes, false, false)
+    @test typeof(edges_rewired) == Vector{Set{Tuple{Int,Int}}}
+    cfg.skip_edges_correlation = true
     edges_rewired = MLNABCDGraphGenerator.adjust_edges_correlation(cfg, edges, coms, active_nodes, false, false)
     @test typeof(edges_rewired) == Vector{Set{Tuple{Int,Int}}}
 end

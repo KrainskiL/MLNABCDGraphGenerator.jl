@@ -1,14 +1,14 @@
-seed = "42"                              # RNG seed, use "" for no seeding
-n = "1000"                               # number of agents
-edges_cor = "edges_cor_matrix.csv"       # desired edges correlation
-                                         # if set to empty string edge correlation step is omitted,
-                                         # if set to value in <0.0;1.0> all pairwise correlations between layers will be adjusted to given value
-                                         # if set to filename with .csv extension, correlation matrix will be loaded from specified file
-layer_params = "layer_params.csv"        # file with parameters for each layer
-d_max_iter = "1000"                      # maximum number of iterations for sampling degrees
-c_max_iter = "1000"                      # maximum number of iterations for sampling cluster sizes
-t = "100"                                # number of batches for edge rewiring
-e = "0.01"                               # percent of edges to be rewired in each rewiring batch
-d = "2"                                  # dimensionality of latent space
-edges_filename = "edges.dat"             # name of file for output edges
-communities_filename = "communities.dat" # name of file for output communities
+seed = "42"                                         # RNG seed, use "" for no seeding
+n = "1000"                                          # number of agents
+edges_cor = "example_edges_cor_matrix.csv"          # desired edges correlation
+                                                    # if set to empty string edge correlation step is omitted,
+                                                    # if set to value in <0.0;1.0> all pairwise correlations between layers will be adjusted to given value
+                                                    # if set to filename with .csv extension, correlation matrix will be loaded from specified file
+layer_params = "example_layer_params.csv"           # file with parameters for each layer
+d_max_iter = "1000"                                 # maximum number of iterations for sampling degrees
+c_max_iter = "1000"                                 # maximum number of iterations for sampling cluster sizes
+t = "100"                                           # number of batches for edge rewiring
+e = "0.01"                                          # percent of edges to be rewired in each rewiring batch
+d = "2"                                             # dimensionality of latent space
+edges_filename = "example_edges.dat"                # name of file for output edges
+communities_filename = "example_communities.dat"    # name of file for output communities

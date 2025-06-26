@@ -1,0 +1,4 @@
+seed = "42"
+n = "1000"
+edges_cor = ""
+layer_params = "default_layer_params.csv"

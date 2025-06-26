@@ -430,7 +430,7 @@ function adjust_edges_correlation(cfg::MLNConfig,
     verbose::Bool=false,
     save_cor_change_to_file::Bool=false)
 
-    cfg.skip_edges_correlation && return nothing
+    cfg.skip_edges_correlation && return edges
     best_edges = working_edges = deepcopy(edges)
     common_agents = common_agents_dict(active_nodes)
     edges_common_agents = common_agents_edges(working_edges, common_agents)

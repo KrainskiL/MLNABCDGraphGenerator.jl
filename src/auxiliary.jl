@@ -115,11 +115,11 @@ function parse_config(filename::String)::MLNConfig
         parse(Int, conf["n"]),
         conf["edges_cor"],
         conf["layer_params"],
-        parse(Int, conf["d_max_iter"]),
-        parse(Int, conf["c_max_iter"]),
-        parse(Int, conf["t"]),
-        parse(Float64, conf["e"]),
-        parse(Int, conf["d"]),
+        haskey(conf, "d_max_iter") ? parse(Int, conf["d_max_iter"]) : 1000,
+        haskey(conf, "c_max_iter") ? parse(Int, conf["c_max_iter"]) : 1000,
+        haskey(conf, "t") ? parse(Int, conf["t"]) : 100,
+        haskey(conf, "e") ? parse(Float64, conf["e"]) : 0.01,
+        haskey(conf, "d") ? parse(Int, conf["d"]) : 2,
         haskey(conf, "edges_filename") ? conf["edges_filename"] : "edges.dat",
         haskey(conf, "communities_filename") ? conf["communities_filename"] : "communities.dat")
 end
