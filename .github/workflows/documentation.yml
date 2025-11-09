@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - fix_documentation_build
     tags: '*'
 
 jobs:
@@ -20,7 +21,7 @@ jobs:
       - name: Julia Setup
         uses: julia-actions/setup-julia@v2
         with:
-          version: '1'
+          version: '1.11'
       - name: Julia Cache
         uses: julia-actions/cache@v2
       - name: Install dependencies
