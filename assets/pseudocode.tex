@@ -9,7 +9,7 @@
 
 \begin{algorithm}
   
-  \textbf{Input:} \ Global ($n,\mathcal{R},d,t,\epsilon$) and layer-specific ($\boldsymbol{\tau},\mathbf{r},\boldsymbol{\gamma},\boldsymbol{\delta},\boldsymbol{\Delta},\boldsymbol{\beta},\mathbf{s},\mathbf{S}$) parameters, edges correlation skip flag ($\texttt{skip\_edges\_correlation}$) \Comment{All layer-specific parameters are vectors of size $\ell$}\\
+  \textbf{Input:} \ Global ($n,\mathcal{R},d,t,\epsilon$) and layer-specific ($\mathbf{q},\boldsymbol{\tau},\mathbf{r},\boldsymbol{\gamma},\boldsymbol{\delta},\boldsymbol{\Delta},\boldsymbol{\beta},\mathbf{s},\mathbf{S},\boldsymbol{\xi}$) parameters, edges correlation skip flag ($\texttt{skip\_edges\_corr}$) \Comment{All layer-specific parameters are vectors of size $\ell$}\\
   \textbf{Output:} \ list of edges, list of communities
   
   \begin{algorithmic}[1]
@@ -24,9 +24,9 @@
         \State $\texttt{communities} \gets generate\_communities(\texttt{communities\_size},\texttt{nodes},\mathbf{r},d)$
         \State $\texttt{edges} \gets generate\_abcd(\texttt{degrees},\texttt{communities\_size},\texttt{communities},\boldsymbol{\xi})$
         \State $\texttt{edges} \gets nodes\_to\_actors(\texttt{edges},\texttt{nodes})$
-        \IfNot{$\texttt{skip\_edges\_correlation}$}
+        \IfNot{$\texttt{skip\_edges\_corr}$}
             \State $\hat{\mathcal{R}} \gets calculate\_edges\_correlation(\texttt{edges})$
-            \For{$i=1 \To t$}
+            \For{$i=1 \textbf{ to } t$}
                 \State $(l1,l2, \texttt{direction}) \gets sample\_layers(\mathcal{R},\hat{\mathcal{R}})$
                 \If{$\texttt{direction} ==$``increase"} \Comment{Different logic for increase and decrease}
                     \State $\texttt{edges} \gets increase\_edges\_correlation(l1,l2,\texttt{edges},\texttt{communities},\epsilon)$
