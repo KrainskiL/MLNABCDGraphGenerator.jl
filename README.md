@@ -9,6 +9,14 @@ Pkg.add(url="https://github.com/bkamins/ABCDGraphGenerator.jl")
 Pkg.add(url="https://github.com/KrainskiL/MLNABCDGraphGenerator.jl")
 ```
 
+## High level design
+The model is splitted into six phases which executed together form full mABCD model. The steps may also be turned off or executed in separation allowing for greater flexibility and promoting reuse of components in new algorithms. Picture below illustrates each phase and lists related parameters:
+
+![](assets/flowchart.png)
+
+For more routine-oriented flow, see pseudocode below:
+
+![](assets/pseudocode.png)
 ## Usage
 The main file intended to be used is `mlnabcd_sampler.jl`.
 The script requires a configuration file with global parameters (see `utils/example_config.toml`).

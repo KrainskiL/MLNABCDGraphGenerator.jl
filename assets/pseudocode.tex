@@ -1,0 +1,44 @@
+\documentclass[12pt]{article}
+\usepackage[inner = 2.0cm, outer = 2.0cm, top = 2.0cm, bottom = 2.0cm]{geometry}
+\usepackage{algorithm}
+\usepackage{amsmath}
+\usepackage[noend]{algpseudocode}
+\algdef{SE}[IF]{IfNot}{EndIf}[1]{\algorithmicif\ \textbf{not}\ #1\ \algorithmicthen}{\algorithmicend\ \algorithmicif}%
+
+\begin{document}
+
+\begin{algorithm}
+  
+  \textbf{Input:} \ Global ($n,\mathcal{R},d,t,\epsilon$) and layer-specific ($\boldsymbol{\tau},\mathbf{r},\boldsymbol{\gamma},\boldsymbol{\delta},\boldsymbol{\Delta},\boldsymbol{\beta},\mathbf{s},\mathbf{S}$) parameters, edges correlation skip flag ($\texttt{skip\_edges\_correlation}$) \Comment{All layer-specific parameters are vectors of size $\ell$}\\
+  \textbf{Output:} \ list of edges, list of communities
+  
+  \begin{algorithmic}[1]
+    
+    \Statex
+    
+    \Function{$mABCDGenerator$}{$n,\mathbf{q},\boldsymbol{\tau},\mathbf{r},\boldsymbol{\gamma},\boldsymbol{\delta},\boldsymbol{\Delta},\boldsymbol{\beta},\mathbf{s},\mathbf{S},d,\texttt{skip\_edges\_correlation},t,\epsilon$}
+        \State $\texttt{nodes} \gets generate\_active\_nodes(n,\mathbf{q})$
+        \State $\texttt{degrees} \gets generate\_degrees(\boldsymbol{\gamma},\boldsymbol{\delta},\boldsymbol{\Delta})$
+        \State $\texttt{degrees} \gets correlate\_degrees(\texttt{degrees},\boldsymbol{\tau})$
+        \State $\texttt{communities\_size} \gets generate\_communities\_size(\boldsymbol{\beta},\mathbf{s},\mathbf{S})$
+        \State $\texttt{communities} \gets generate\_communities(\texttt{communities\_size},\texttt{nodes},\mathbf{r},d)$
+        \State $\texttt{edges} \gets generate\_abcd(\texttt{degrees},\texttt{communities\_size},\texttt{communities},\boldsymbol{\xi})$
+        \State $\texttt{edges} \gets nodes\_to\_actors(\texttt{edges},\texttt{nodes})$
+        \IfNot{$\texttt{skip\_edges\_correlation}$}
+            \State $\hat{\mathcal{R}} \gets calculate\_edges\_correlation(\texttt{edges})$
+            \For{$i=1 \To t$}
+                \State $(l1,l2, \texttt{direction}) \gets sample\_layers(\mathcal{R},\hat{\mathcal{R}})$
+                \If{$\texttt{direction} ==$``increase"} \Comment{Different logic for increase and decrease}
+                    \State $\texttt{edges} \gets increase\_edges\_correlation(l1,l2,\texttt{edges},\texttt{communities},\epsilon)$
+                \Else
+                    \State $\texttt{edges} \gets decrease\_edges\_correlation(l1,l2,\texttt{edges},\texttt{communities},\epsilon)$ 
+                \EndIf
+                \State $\hat{\mathcal{R}} \gets calculate\_edges\_correlation(\texttt{edges})$
+            \EndFor
+        \EndIf
+        \State \Return $(\texttt{communities}, \texttt{edges})$
+    \EndFunction
+  \end{algorithmic}
+  
+\end{algorithm}
+\end{document}
