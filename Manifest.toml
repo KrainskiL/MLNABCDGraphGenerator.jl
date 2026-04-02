@@ -161,7 +161,7 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 version = "1.11.0"
 
 [[deps.MLNABCDGraphGenerator]]
-deps = ["ABCDGraphGenerator", "ArgParse", "Dates", "DelimitedFiles", "Pkg", "Random", "StatsBase"]
+deps = ["ArgParse", "Dates", "DelimitedFiles", "Pkg", "Random", "StatsBase"]
 path = "."
 uuid = "f13e9af9-00dd-4f47-beab-22c55778c23d"
 version = "1.0.1"
