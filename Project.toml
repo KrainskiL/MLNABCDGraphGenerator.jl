@@ -1,6 +1,6 @@
 name = "MLNABCDGraphGenerator"
 uuid = "f13e9af9-00dd-4f47-beab-22c55778c23d"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Lukasz Krainski"]
 
 [deps]
