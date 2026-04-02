@@ -1,7 +1,7 @@
 name = "MLNABCDGraphGenerator"
 uuid = "f13e9af9-00dd-4f47-beab-22c55778c23d"
+version = "1.0.2"
 authors = ["Lukasz Krainski"]
-version = "1.0.1"
 
 [deps]
 ABCDGraphGenerator = "4c9194b5-d5d9-4bea-bd96-43ca8ce89b0b"
@@ -13,7 +13,7 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
-ABCDGraphGenerator = "0.2.0"
+ABCDGraphGenerator = "0.3.0"
 ArgParse = "1.2.0"
 Dates = "1.11.0"
 DelimitedFiles = "1.9.1"
